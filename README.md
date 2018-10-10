@@ -1,4 +1,4 @@
-# IRC
+# Intermolecular Random Collision
 ### A simple simulation of intermolecular random collision using Pygame
 ![demo](demo.gif)
 
