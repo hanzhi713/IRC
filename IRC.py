@@ -41,11 +41,6 @@ class Vec:
 
 class Molecule:
 
-    @staticmethod
-    def if_collide(cir1, cir2):
-        if (cir1.x - cir2.x) ** 2 + (cir1.y - cir2.y) ** 2 <= (cir1.radius + cir2.radius) ** 2:
-            return True
-
     def __init__(self, id=0, pos=Vec(0, 0), vel=Vec(0, 0), radius=12):
         self.pos = pos
         self.vel = vel
@@ -100,14 +95,11 @@ class Molecule:
 
 
 if __name__ == "__main__":
-    pygame.init()
-    screen = pygame.display.set_mode((800, 630))
-    pygame.display.set_caption("Molecules")
-
     instructions = ["Instructions:", "Use the key UP and DOWN to change the velocity",
-                    "If velocity is negative, then molecules will be able to move out of the window"]
+                    "If velocity is negative, molecules will be able to move out of the window"]
     for ins in instructions:
         print(ins)
+
 
     def parse_int(prompt, default):
         temp = input(prompt)
@@ -125,6 +117,10 @@ if __name__ == "__main__":
     number = parse_int("Please specify the total number of molecules (25):", 25)
     r_lower = parse_int("Please enter the lower bound of the radius (10):", 10)
     r_upper = parse_int("Please enter the upper bound of the radius (20):", 20)
+
+    pygame.init()
+    screen = pygame.display.set_mode((800, 630))
+    pygame.display.set_caption("Molecules")
 
     # instantiate molecule objects and generate distinct initial positions
     while len(molecule_list) < number:
