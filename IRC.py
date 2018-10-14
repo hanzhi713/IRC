@@ -3,6 +3,7 @@ import sys
 from math import *
 import random
 import time
+import os
 
 
 class Vec:
@@ -41,18 +42,18 @@ class Vec:
 
 class Molecule:
 
-    def __init__(self, id=0, pos=Vec(0, 0), vel=Vec(0, 0), radius=12):
+    def __init__(self, id=0, pos=Vec(0, 0), vel=Vec(0, 0), radius=12, w=800, h=600):
         self.pos = pos
         self.vel = vel
         self.ppos = pos
         self.id = id
         self.radius = radius
         self.mass = radius * radius * pi
-        self.image = pygame.transform.smoothscale(pygame.image.load("interesting.png"), (radius * 2, radius * 2))
+        self.image = pygame.transform.smoothscale(pygame.image.load(os.path.join(os.path.dirname(__file__), "interesting.png")), (radius * 2, radius * 2))
         self.left_edge = radius
-        self.right_edge = 800 - radius
+        self.right_edge = w - radius
         self.top_edge = radius
-        self.bottom_edge = 600 - radius
+        self.bottom_edge = h - radius
 
     # move with a given distance and an angle. Checking collision in the meantime
     def move(self, vel_multiplier, others):
@@ -85,6 +86,10 @@ class Molecule:
                     one.abs_move(vel_multiplier)
                     pass
 
+    def update_boundary(self, w, h):
+        self.right_edge = w - self.radius
+        self.bottom_edge = h - self.radius
+
     # move without concerning any collision
     def abs_move(self, vel_multiplier):
         self.ppos = self.pos
@@ -113,14 +118,11 @@ if __name__ == "__main__":
                 except ValueError:
                     print("Please enter an integer")
 
+
     molecule_list = []
     number = parse_int("Please specify the total number of molecules (25):", 25)
     r_lower = parse_int("Please enter the lower bound of the radius (10):", 10)
     r_upper = parse_int("Please enter the upper bound of the radius (20):", 20)
-
-    pygame.init()
-    screen = pygame.display.set_mode((800, 630))
-    pygame.display.set_caption("Molecules")
 
     # instantiate molecule objects and generate distinct initial positions
     while len(molecule_list) < number:
@@ -129,50 +131,57 @@ if __name__ == "__main__":
         new = Molecule(id=len(molecule_list), pos=Vec(random.randint(0, 765), random.randint(0, 565)),
                        vel=Vec(random.random() * 2 - 1, random.random() * 2 - 1), radius=radius)
         for obj in molecule_list:
-            if abs(new.pos - obj.pos) <= new.radius + obj.radius:
+            if abs(new.pos - obj.pos) <= new.radius + obj.radius + 2:
                 flag = True
                 break
         if flag:
             continue
         molecule_list.append(new)
-    my_font1 = pygame.font.SysFont("Calibri", 20, True)
-    my_font2 = pygame.font.SysFont("Calibri", 20, True)
     # main game loop
     vel = 1
-    multiplier = 1 / 30
+    ticks = 120
+    multiplier = 5
     frames = 0
-    FPS = my_font2.render("FPS: Calculating", True, (0, 255, 0))
-    t0 = time.clock()
-
     clock = pygame.time.Clock()
+    w, h = 800, 630
+    pygame.init()
+    screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
+    pygame.display.set_caption("Molecules")
 
+    t0 = time.clock()
+    my_font = pygame.font.SysFont("Calibri", 20, True)
+    FPS = my_font.render("FPS: Calculating", True, (0, 255, 0))
     while True:
-        dt = clock.tick(240)
+        dt = clock.tick(ticks)
         for i in range(len(molecule_list)):
-            molecule_list[i].move(vel * multiplier * dt, molecule_list[i + 1:])
+            molecule_list[i].move(vel * multiplier * dt / ticks, molecule_list[i + 1:])
 
         screen.fill((0, 0, 0))
 
         for m in molecule_list:
             m.draw(screen)
 
-        pygame.draw.rect(screen, (0, 0, 0), (700, 605, 100, 30))
-        pygame.draw.line(screen, (255, 100, 0), (0, 602), (800, 602), 2)
-        text_surf = my_font1.render("Velocity: {0}".format(vel), True, (0, 255, 0))
+        pygame.draw.line(screen, (255, 100, 0), (0, h - 28), (w, h - 28), 2)
+        Vel_Text = my_font.render("Velocity: {0}".format(vel), True, (0, 255, 0))
         frames += 1
-        pygame.draw.rect(screen, (0, 0, 0), (0, 605, 150, 30))
         if frames % 30 == 0:
             frames = 0
-            FPS = my_font2.render("FPS: {0}".format(round(30 / (time.clock() - t0), 1)), True, (0, 255, 0))
+            FPS = my_font.render("FPS: {0}".format(round(30 / (time.clock() - t0), 1)), True, (0, 255, 0))
             t0 = time.clock()
-        screen.blit(FPS, (0, 605))
-        screen.blit(text_surf, (690, 605))
+        screen.blit(FPS, (0, h - 25))
+        screen.blit(Vel_Text, (w - 110, h - 25))
         pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
-            if event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     vel += 1
                 elif event.key == pygame.K_DOWN:
                     vel -= 1
+            elif event.type == pygame.VIDEORESIZE:
+                screen = pygame.display.set_mode(event.size, pygame.RESIZABLE)
+                pygame.display.flip()
+                w, h = event.w, event.h
+                for m in molecule_list:
+                    m.update_boundary(w, h - 30)
