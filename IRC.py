@@ -160,6 +160,7 @@ if __name__ == "__main__":
     frames = 0
     clock = pygame.time.Clock()
     w, h = 800, 630
+    pw, ph = w, h
     pygame.init()
     screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
     pygame.display.set_caption("Molecules")
@@ -183,8 +184,18 @@ if __name__ == "__main__":
             molecule_list[i].move(vel * multiplier * dt / ticks, neighbors)
 
         # update grid
-        for i in range(len(grid)):
-            grid[i].clear()
+        if w != pw or h != ph:
+            grid_row = h // grid_size
+            if h % grid_size != 0:
+                grid_row += 1
+            grid_col = w // grid_size
+            if w % grid_size != 0:
+                grid_col += 1
+            grid = [[] for i in range(0, grid_row * grid_col)]
+            pw, ph = w, h
+        else:
+            for i in range(len(grid)):
+                grid[i].clear()
 
         for i in range(len(molecule_list)):
             r_idx = int(molecule_list[i].pos.y // grid_size)
