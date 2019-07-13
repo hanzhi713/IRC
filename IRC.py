@@ -49,11 +49,13 @@ class Molecule:
         self.id = id
         self.radius = radius
         self.mass = radius * radius * pi
-        self.image = pygame.transform.smoothscale(pygame.image.load(os.path.join(os.path.dirname(__file__), "interesting.png")), (radius * 2, radius * 2))
+        self.image = pygame.transform.smoothscale(pygame.image.load(os.path.join(os.path.dirname(__file__), "Interesting.png")), (radius * 2, radius * 2))
         self.left_edge = radius
         self.right_edge = w - radius
         self.top_edge = radius
         self.bottom_edge = h - radius
+        self.grid_r_idx = -1
+        self.grid_c_idx = -1
 
     # move with a given distance and an angle. Checking collision in the meantime
     def move(self, vel_multiplier, others):
@@ -124,6 +126,15 @@ if __name__ == "__main__":
     r_lower = parse_int("Please enter the lower bound of the radius (10):", 10)
     r_upper = parse_int("Please enter the upper bound of the radius (20):", 20)
 
+    grid_size = r_upper * 2
+    grid_row = 630 // grid_size
+    if 630 % grid_size != 0:
+        grid_row += 1
+    grid_col = 800 // grid_size
+    if 800 % grid_size != 0:
+        grid_col += 1
+    grid = [[] for i in range(0, grid_row * grid_col)]
+
     # instantiate molecule objects and generate distinct initial positions
     while len(molecule_list) < number:
         flag = False
@@ -137,6 +148,11 @@ if __name__ == "__main__":
         if flag:
             continue
         molecule_list.append(new)
+        r_idx = int(new.pos.y // grid_size)
+        c_idx = int(new.pos.x // grid_size)
+        new.grid_r_idx = r_idx
+        new.grid_c_idx = c_idx
+        grid[r_idx * grid_col + c_idx].append(new)
     # main game loop
     vel = 1
     ticks = 120
@@ -144,6 +160,7 @@ if __name__ == "__main__":
     frames = 0
     clock = pygame.time.Clock()
     w, h = 800, 630
+    pw, ph = w, h
     pygame.init()
     screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
     pygame.display.set_caption("Molecules")
@@ -154,7 +171,38 @@ if __name__ == "__main__":
     while True:
         dt = clock.tick(ticks)
         for i in range(len(molecule_list)):
-            molecule_list[i].move(vel * multiplier * dt / ticks, molecule_list[i + 1:])
+            # neighbors
+            neighbors = []
+            for a in range(-1, 2):
+                for b in range(-1, 2):
+                    temp_r = molecule_list[i].grid_r_idx + a
+                    temp_c = molecule_list[i].grid_c_idx + b
+                    if temp_r < 0 or temp_c < 0 or temp_r >= grid_row or temp_c >= grid_row:
+                        continue
+                    neighbors.extend(grid[temp_r * grid_col + temp_c])
+
+            molecule_list[i].move(vel * multiplier * dt / ticks, neighbors)
+
+        # update grid
+        if w != pw or h != ph:
+            grid_row = h // grid_size
+            if h % grid_size != 0:
+                grid_row += 1
+            grid_col = w // grid_size
+            if w % grid_size != 0:
+                grid_col += 1
+            grid = [[] for i in range(0, grid_row * grid_col)]
+            pw, ph = w, h
+        else:
+            for i in range(len(grid)):
+                grid[i].clear()
+
+        for i in range(len(molecule_list)):
+            r_idx = int(molecule_list[i].pos.y // grid_size)
+            c_idx = int(molecule_list[i].pos.x // grid_size)
+            molecule_list[i].grid_r_idx = r_idx
+            molecule_list[i].grid_c_idx = c_idx
+            grid[r_idx * grid_col + c_idx].append(molecule_list[i])
 
         screen.fill((0, 0, 0))
 
